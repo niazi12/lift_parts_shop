@@ -1,0 +1,41 @@
+# Local development: Postgres 16 plus the Django API and job worker.
+# Run Next.js on the host with `npm run dev` in web/.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: liftparts
+      POSTGRES_PASSWORD: liftparts
+      POSTGRES_DB: liftparts
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liftparts"]
+      interval: 2s
+      retries: 15
+
+  api:
+    build: ./api
+    env_file: ./api/.env
+    environment:
+      DATABASE_URL: postgres://liftparts:liftparts@db:5432/liftparts
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes: ["./api:/app"]
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+
+  worker:
+    build: ./api
+    env_file: ./api/.env
+    environment:
+      DATABASE_URL: postgres://liftparts:liftparts@db:5432/liftparts
+    command: python manage.py qcluster
+    volumes: ["./api:/app"]
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  pgdata:

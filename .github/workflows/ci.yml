@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  api:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: liftparts
+          POSTGRES_PASSWORD: liftparts
+          POSTGRES_DB: liftparts
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U liftparts"
+          --health-interval 2s --health-retries 15
+    env:
+      DEBUG: "1"
+      DATABASE_URL: postgres://liftparts:liftparts@localhost:5432/liftparts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: api/requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: python manage.py makemigrations --check --dry-run
+      - run: pytest
+      - name: OpenAPI schema is up to date
+        run: |
+          python manage.py export_openapi --output /tmp/openapi.json
+          diff -u openapi.json /tmp/openapi.json
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      API_URL: http://localhost:8000
+      API_KEY: ci
+      REVALIDATE_SECRET: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Generated API types match the schema
+        run: npm run api:types:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
