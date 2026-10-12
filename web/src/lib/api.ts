@@ -57,7 +57,13 @@ export async function apiFetch<T>(path: ApiPath, options: FetchOptions = {}): Pr
 }
 
 export type HealthOut = paths["/api/v1/health"]["get"]["responses"][200]["content"]["application/json"];
+export type ProductListOut = paths["/api/v1/products"]["get"]["responses"][200]["content"]["application/json"];
+export type ProductOut = ProductListOut["items"][number];
 
 export function getHealth() {
   return apiFetch<HealthOut>("/api/v1/health", { cache: "no-store" });
+}
+
+export function getProducts() {
+  return apiFetch<ProductListOut>("/api/v1/products", { cache: "no-store" });
 }

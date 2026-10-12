@@ -1,6 +1,8 @@
 import pytest
 from django.test import override_settings
 
+from core.models import Product
+
 pytestmark = pytest.mark.django_db
 
 
@@ -33,3 +35,22 @@ def test_api_key_auth():
 
 def test_admin_is_not_on_default_path(client):
     assert client.get("/admin/").status_code == 404
+
+
+@override_settings(INTERNAL_API_KEY="right-key")
+def test_products_are_listed(client):
+    Product.objects.create(
+        sku="HS-1001",
+        name="Hydraulic Oil Seal",
+        slug="hydraulic-oil-seal",
+        description="Heavy-duty seal for hydraulic ram assemblies.",
+        price="42.50",
+        stock_quantity=8,
+    )
+
+    response = client.get("/api/v1/products", HTTP_X_API_KEY="right-key")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"][0]["sku"] == "HS-1001"
+    assert payload["items"][0]["name"] == "Hydraulic Oil Seal"

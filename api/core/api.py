@@ -6,6 +6,7 @@ from ninja.errors import AuthenticationError, HttpError, ValidationError
 
 from .auth import InternalApiKey
 from .errors import ApiError
+from .models import Product
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,45 @@ def health(request):
         return 503, {"status": "error", "database": "unavailable"}
 
 
-api.add_router("", health_router)
+class ProductOut(Schema):
+    id: int
+    sku: str
+    name: str
+    slug: str
+    description: str
+    price: float
+    stock_quantity: int
+    is_active: bool
 
-# Routers for catalogue, orders and quotes are added in later phases.
+
+class ProductListOut(Schema):
+    items: list[ProductOut]
+
+
+catalogue_router = Router(tags=["catalogue"])
+
+
+@catalogue_router.get("/products", response={200: ProductListOut})
+def list_products(request):
+    products = Product.objects.filter(is_active=True).order_by("name")
+    return 200, {
+        "items": [
+            {
+                "id": product.id,
+                "sku": product.sku,
+                "name": product.name,
+                "slug": product.slug,
+                "description": product.description,
+                "price": float(product.price),
+                "stock_quantity": product.stock_quantity,
+                "is_active": product.is_active,
+            }
+            for product in products
+        ]
+    }
+
+
+api.add_router("", health_router)
+api.add_router("", catalogue_router)
+
+# Routers for orders and quotes are added in later phases.

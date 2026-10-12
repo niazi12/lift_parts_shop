@@ -18,6 +18,77 @@
         ],
         "title": "HealthOut",
         "type": "object"
+      },
+      "ProductListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProductOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ProductListOut",
+        "type": "object"
+      },
+      "ProductOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "price": {
+            "title": "Price",
+            "type": "number"
+          },
+          "sku": {
+            "title": "Sku",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "stock_quantity": {
+            "title": "Stock Quantity",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "name",
+          "slug",
+          "description",
+          "price",
+          "stock_quantity",
+          "is_active"
+        ],
+        "title": "ProductOut",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "InternalApiKey": {
+        "in": "header",
+        "name": "X-Api-Key",
+        "type": "apiKey"
       }
     }
   },
@@ -58,6 +129,33 @@
         "summary": "Health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/v1/products": {
+      "get": {
+        "operationId": "core_api_list_products",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListOut"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "security": [
+          {
+            "InternalApiKey": []
+          }
+        ],
+        "summary": "List Products",
+        "tags": [
+          "catalogue"
         ]
       }
     }
